@@ -1,0 +1,28 @@
+{
+  "cSpell.language": "en, de-de, lorem-ipsum, python",
+  "yaml.schemas": {
+    "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yaml"
+  },
+  "cSpell.ignorePaths": [".git", ".vscode"],
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "[python]": {
+    "editor.defaultFormatter": null
+  },
+  "python.formatting.provider": "black",
+  "gitmoji.outputType": "emoji",
+  "cSpell.words": [
+    "autofix",
+    "autorefs",
+    "codecov",
+    "codeql",
+    "fontawesome",
+    "isort",
+    "linkedin",
+    "Mkdocs",
+    "mkdocstrings",
+    "mypy",
+    "pytest",
+    "pyupgrade"
+  ]
+}
