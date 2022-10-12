@@ -1,4 +1,4 @@
-name: Measure Code Coverage
+name: Run Pytest
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
     branches: ["main"]
 
 jobs:
-  measure-coverage:
+  pytest:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -23,5 +23,7 @@ jobs:
           poetry-version: 1.2.1
       - name: Install dependencies using Poetry
         run: poetry install
-      - name: Run tests
+      - name: Run pytest
         run: poetry run pytest
+      - name: Run codecov
+        run: poetry run pytest --cov --cov-fail-under=80
