@@ -12,11 +12,13 @@
   "python.formatting.provider": "black",
   "gitmoji.outputType": "emoji",
   "cSpell.words": [
+    "abatilo",
     "autofix",
     "autorefs",
     "codecov",
     "codeql",
     "fontawesome",
+    "Fritzsch",
     "isort",
     "linkedin",
     "Mkdocs",

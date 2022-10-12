@@ -54,10 +54,3 @@ theme:
     - content.tabs.link
 
   language: en
-
-# Extras
-extra:
-  social:
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/in/felix-emmanuel-hoffmann/
-      name: Felix Hoffmann
