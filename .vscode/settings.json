@@ -14,15 +14,25 @@
   "cSpell.words": [
     "autofix",
     "autorefs",
+    "cmap",
     "codecov",
     "codeql",
     "fontawesome",
+    "Fritzsch",
+    "imshow",
     "isort",
+    "lena",
+    "lenna",
     "linkedin",
+    "matplotlib",
     "Mkdocs",
     "mkdocstrings",
     "mypy",
+    "pyplot",
     "pytest",
-    "pyupgrade"
+    "pyupgrade",
+    "scipy",
+    "vmax",
+    "vmin"
   ]
 }
