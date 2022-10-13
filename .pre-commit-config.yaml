@@ -8,14 +8,12 @@ repos:
 
       - id: poetry-lock
         name: lock poetry (poetry-lock)
-        stages: [commit, push]
-        types: [python]
+        always_run: true
 
       - id: poetry-export
         name: export poetry (poetry-export)
         args: ["--dev", "-f", "requirements.txt", "-o", "requirements.txt"]
-        stages: [commit, push]
-        types: [python]
+        always_run: true
 
   - repo: https://github.com/pycqa/isort
     rev: 5.10.1
@@ -64,7 +62,6 @@ repos:
         name: run pytest (pytest)
         language: system
         entry: poetry run pytest
-        types: [python]
         pass_filenames: false
         always_run: true
 
@@ -72,7 +69,6 @@ repos:
         name: check pytest coverage (pytest-cov)
         language: system
         entry: poetry run pytest --cov --cov-fail-under=80
-        types: [python]
         pass_filenames: false
         always_run: true
 
@@ -90,5 +86,5 @@ repos:
       - id: pyupgrade
         name: upgrade pre-commit (pyupgrade)
         stages: [commit, push]
-        types: [python]
         args: [--py310-plus]
+        always_run: true
