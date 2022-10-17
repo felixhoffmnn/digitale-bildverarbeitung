@@ -1,0 +1,34 @@
+{
+  "ignorePaths": [
+    ".git",
+    ".vscode"
+  ],
+  "language": "en, de-de, lorem-ipsum, python",
+  "words": [
+    "abatilo",
+    "autofix",
+    "autorefs",
+    "cmap",
+    "codecov",
+    "codeql",
+    "figsize",
+    "fontawesome",
+    "Fritzsch",
+    "imshow",
+    "isort",
+    "lena",
+    "lenna",
+    "linkedin",
+    "matplotlib",
+    "Mkdocs",
+    "mkdocstrings",
+    "moodle",
+    "mypy",
+    "pyplot",
+    "pytest",
+    "pyupgrade",
+    "scipy",
+    "vmax",
+    "vmin"
+  ]
+}
