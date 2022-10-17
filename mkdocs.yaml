@@ -1,9 +1,9 @@
 # Metadata
-site_name: python_template
+site_name: digital_image_processing
 site_description: Dolore fugiat ullamco voluptate incididunt voluptate voluptate magna esse eiusmod velit deserunt cillum ut do.
-site_author: Felix Hoffmann
-repo_name: python_template
-repo_url: https://github.com/felixhoffmnn/python_template
+site_author: Felix Hoffmann, Leopold Fuchs, and Maxime Fritzsch
+repo_name: digital_image_processing
+repo_url: https://github.com/felixhoffmnn/digital_image_processing
 
 # Navigation
 nav:
@@ -54,10 +54,3 @@ theme:
     - content.tabs.link
 
   language: en
-
-# Extras
-extra:
-  social:
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/in/felix-emmanuel-hoffmann/
-      name: Felix Hoffmann
