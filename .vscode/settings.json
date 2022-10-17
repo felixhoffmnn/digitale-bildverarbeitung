@@ -12,6 +12,7 @@
   "python.formatting.provider": "black",
   "gitmoji.outputType": "emoji",
   "cSpell.words": [
+    "abatilo",
     "autofix",
     "autorefs",
     "cmap",
