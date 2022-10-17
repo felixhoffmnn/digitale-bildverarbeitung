@@ -8,5 +8,6 @@
     "editor.defaultFormatter": null
   },
   "python.formatting.provider": "black",
-  "gitmoji.outputType": "emoji"
+  "gitmoji.outputType": "emoji",
+  "python.linting.pylintArgs": ["--generate-members"]
 }
