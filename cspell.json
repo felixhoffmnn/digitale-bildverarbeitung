@@ -42,6 +42,7 @@
     "mypy",
     "ndarray",
     "Numpy",
+    "pipx",
     "pyplot",
     "pytest",
     "pyupgrade",
