@@ -1,9 +1,7 @@
 {
-  "cSpell.language": "en, de-de, lorem-ipsum, python",
   "yaml.schemas": {
     "https://squidfunk.github.io/mkdocs-material/schema.json": "mkdocs.yaml"
   },
-  "cSpell.ignorePaths": [".git", ".vscode"],
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "[python]": {
@@ -11,20 +9,5 @@
   },
   "python.formatting.provider": "black",
   "gitmoji.outputType": "emoji",
-  "cSpell.words": [
-    "abatilo",
-    "autofix",
-    "autorefs",
-    "codecov",
-    "codeql",
-    "fontawesome",
-    "Fritzsch",
-    "isort",
-    "linkedin",
-    "Mkdocs",
-    "mkdocstrings",
-    "mypy",
-    "pytest",
-    "pyupgrade"
-  ]
+  "python.linting.pylintArgs": ["--generate-members"]
 }

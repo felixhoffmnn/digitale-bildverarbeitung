@@ -12,7 +12,7 @@ repos:
 
       - id: poetry-export
         name: export poetry (poetry-export)
-        args: ["--dev", "-f", "requirements.txt", "-o", "requirements.txt"]
+        args: ["-f", "requirements.txt", "-o", "requirements.txt"]
         always_run: true
 
   - repo: https://github.com/pycqa/isort
