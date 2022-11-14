@@ -14,8 +14,28 @@ nav:
 # Plugins
 plugins:
   - search
+  - git-revision-date-localized:
+      fallback_to_build_date: true
   - autorefs
-  - mkdocstrings
+  - mkdocs-jupyter:
+      include: ["*.ipynb"]
+      kernel_name: python3
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          import:
+            - https://docs.python.org/3/objects.inv
+            - https://mkdocstrings.github.io/objects.inv
+            - https://mkdocstrings.github.io/griffe/objects.inv
+          options:
+            filters: ["!^__"]
+            docstring_style: numpy
+            docstring_section_style: table
+            merge_init_into_class: true
+            show_root_heading: true
+            show_source: yes
+            show_root_full_path: no
 
 # Theme
 theme:
@@ -53,4 +73,18 @@ theme:
     - search.highlight
     - content.tabs.link
 
+  icon:
+    logo: logo
+    repo: fontawesome/brands/github
+
   language: en
+
+# Markdown extensions
+markdown_extensions:
+  - attr_list
+  - pymdownx.magiclink
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg

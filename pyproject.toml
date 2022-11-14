@@ -15,10 +15,6 @@ python = "^3.10"
 loguru = "^0.6.0"
 pandas = "^1.5.0"
 numpy = "^1.23.3"
-mkdocs = {extras = ["python"], version = "^1.4.0"}
-mkdocs-material = "^8.5.6"
-mkdocstrings = {extras = ["python"], version = "^0.19.0"}
-mkdocs-autorefs = "^0.4.1"
 opencv-python = "^4.6.0.66"
 matplotlib = "^3.6.1"
 scipy = "^1.9.2"
@@ -34,6 +30,16 @@ autopep8 = "^1.7.0"
 pre-commit = "^2.20.0"
 pytest-cov = "^4.0.0"
 jupyter = "^1.0.0"
+
+[tool.poetry.group.docs.dependencies]
+mkdocs = { extras = ["python"], version = "^1.4.0" }
+mkdocs-material = "^8.5.6"
+mkdocstrings = { extras = ["python"], version = "^0.19.0" }
+mkdocs-autorefs = "^0.4.1"
+mkdocs-git-revision-date-localized-plugin = "^1.1.0"
+mkdocs-jupyter = "^0.22.0"
+pymdown-extensions = "^9.8"
+mkdocs-mermaid2-plugin = "^0.6.0"
 
 [tool.mypy]
 mypy_path = 'src'
