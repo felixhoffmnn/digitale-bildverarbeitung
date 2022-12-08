@@ -76,22 +76,6 @@ repos:
         additional_dependencies: ["types-requests"]
         types: [python]
 
-  - repo: local
-    hooks:
-      - id: pytest
-        name: run pytest (pytest)
-        language: system
-        entry: poetry run pytest
-        pass_filenames: false
-        always_run: true
-
-      - id: pytest-cov
-        name: check pytest coverage (pytest-cov)
-        language: system
-        entry: poetry run pytest --cov --cov-fail-under=80
-        pass_filenames: false
-        always_run: true
-
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: "v2.7.1"
     hooks:
