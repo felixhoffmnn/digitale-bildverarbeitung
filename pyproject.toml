@@ -5,13 +5,11 @@ description = "Dolore fugiat ullamco voluptate incididunt voluptate voluptate ma
 authors = [
   "Felix Hoffmann <felix.emmanuel.hoffmann@gmail.com>",
   "Leopold Fuchs <kontakt@leopold-fuchs.de>",
-  "Maxime Fritzsch <mfritzsch89@gmail.com>"
+  "Maxime Fritzsch <mfritzsch89@gmail.com>",
 ]
 license = "MIT"
 readme = "README.md"
-packages = [
-  { include = "src" }
-]
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -21,9 +19,10 @@ numpy = "^1.23.3"
 opencv-python = "^4.6.0.66"
 matplotlib = "^3.6.1"
 scipy = "^1.9.2"
+fire = "^0.4.0"
 
 [tool.poetry.group.dev.dependencies]
-black = {extras = ["jupyter"], version = "^22.8.0"}
+black = { extras = ["jupyter"], version = "^22.8.0" }
 isort = "^5.10.1"
 mypy = "^0.981"
 pylint = "^2.15.3"
@@ -64,6 +63,7 @@ profile = "black"
 [tool.pylint]
 disable = "missing-module-docstring, broad-except"
 max-line-length = 120
+generated-members = "np.*, cv2.*"
 
 [build-system]
 requires = ["poetry-core"]

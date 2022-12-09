@@ -8,7 +8,8 @@
 - [python_template](#python_template)
   - [Introduction](#introduction)
   - [Getting Started](#getting-started)
-  - [Tips & Tricks](#tips--tricks)
+  - [Tips \& Tricks](#tips--tricks)
+  - [Concept](#concept)
 
 ## Introduction
 
@@ -31,3 +32,19 @@ Excepteur ea eiusmod adipisicing dolor do qui mollit tempor. Tempor sit cillum i
 <!-- TODO: Instruction on codecov, pre-commit, and codeql -->
 
 <!-- TODO: Deployment methods for Mkdocs -->
+
+## Concept
+
+```mermaid
+graph TB;
+
+calibrate_camera --> get_input;
+get_input --> apply_calibration;
+apply_calibration --> select_area_of_interest;
+select_area_of_interest --> color_transformation;
+color_transformation --> bird_eye_view;
+bird_eye_view --> detect_lane;
+detect_lane --> calculate_curvature;
+calculate_curvature --> draw_lane;
+draw_lane --> output;
+```
