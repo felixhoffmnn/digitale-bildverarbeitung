@@ -22,7 +22,7 @@ def get_inner_line(img_rgb: cv.Mat, img_hls: cv.Mat, img_hsv: cv.Mat) -> cv.Mat:
     cv.Mat
         The mask for the base image for inner lines
     """
-    w_gray_thresh = cv.inRange(img_rgb[:, :, 0], np.array([185]), np.array([255]))
+    w_gray_thresh = cv.inRange(img_rgb[:, :, 0], np.array([200]), np.array([255]))
     y_lab_thresh = cv.inRange(img_hsv, np.array([50, 65, 75]), np.array([110, 165, 255]))
     s_hls_thresh = cv.inRange(img_hls[:, :, 2], np.array([180]), np.array([200]))
     s_hsv_thresh = cv.inRange(img_hsv[:, :, 1], np.array([200]), np.array([215]))
@@ -67,7 +67,10 @@ def get_sobel(
     scaled_sobel = np.uint8(255 * abs_sobel / np.max(abs_sobel))
 
     s_binary = np.zeros_like(scaled_sobel)
-    s_binary[(scaled_sobel >= sobel_threshold[0]) & (scaled_sobel <= sobel_threshold[1])] = 1
+    s_binary[(scaled_sobel >= sobel_threshold[0]) & (scaled_sobel <= sobel_threshold[1])] = 255
+
+    r_rgb_mask = cv.inRange(img, np.array([140]), np.array([255]))
+    s_binary = cv.bitwise_and(s_binary, r_rgb_mask)
 
     return s_binary
 
@@ -99,6 +102,15 @@ def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     inner_line = get_inner_line(img_rgb, img_hls, img_hsv)
     outer_line = get_sobel(img_gray, "x", 3)
 
-    line = cv.bitwise_or(inner_line, outer_line)
+    lane = cv.bitwise_or(inner_line, outer_line)
 
-    return line
+    if kitti:
+        g_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([195]), np.array([255]))
+        lane = cv.bitwise_and(lane, g_rgb_mask)
+
+    return lane
+
+
+# calculate light channel mean 65 < 140
+# for
+# Seperate image into 4 parts (np.concatenate)

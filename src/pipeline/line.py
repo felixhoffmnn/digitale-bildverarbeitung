@@ -2,6 +2,7 @@ import collections
 
 import cv2 as cv
 import numpy as np
+from loguru import logger
 
 
 class Line:
@@ -49,11 +50,11 @@ class Line:
         self.recent_fits_pixel.append(self.last_fit_pixel)
         self.recent_fits_meter.append(self.last_fit_meter)
 
-    def draw(self, mask, color=(255, 0, 0), line_width=25, average=False):
+    def draw(self, mask, color=(255, 0, 0), line_width=10, average=False):
         """
         Draw the line on a color mask image.
         """
-        h, w, c = mask.shape
+        h, _, _ = mask.shape
 
         plot_y = np.linspace(0, h - 1, h)
         coeffs = self.average_fit if average else self.last_fit_pixel

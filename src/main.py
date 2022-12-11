@@ -17,8 +17,11 @@ from src.pipeline.curve import (
     get_fits_by_sliding_windows,
 )
 from src.pipeline.line import Line
-from src.pipeline.perspective import transform_perspective, undist_img
-from src.pipeline.region import region_of_interest
+from src.pipeline.perspective import (
+    region_of_interest,
+    transform_perspective,
+    undist_img,
+)
 from src.pipeline.threshold import thresh_img
 from src.pipeline.view import overlay_frames
 from src.utils.calibration import get_calibration_params
@@ -27,6 +30,11 @@ from src.utils.shell import clear_shell, get_int, print_options
 processed_frames = 0  # counter of frames processed (when processing video)
 line_lt = Line(buffer_len=10)  # line on the left of the lane
 line_rt = Line(buffer_len=10)  # line on the right of the lane
+Minv = None
+img_thresh = None
+img_region = None
+img_warped = None
+img_poly = None
 
 
 def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
@@ -36,12 +44,12 @@ def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
 
 
 def pipeline(
-    img_rgb: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat], pretty: bool, kitti: bool = False, keep_state: bool = True
+    img_rgb: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat], pretty: bool, kitti: bool, resize: bool, keep_state: bool = True
 ) -> list[cv.Mat]:
     """Pipeline to process an image.
 
     1. `undistort`: Applyes the camera calibration matrix and distortion coefficients to a raw image.
-    2. `gaussian`: Blure the image with a Gaussian filter.
+    2. `gaussian`: Blur the image with a Gaussian filter.
     3. `thresh`: Applies a threshold to the image (Sobel, HLS, HSV, Gray).
     4. `region`: Polyfill only the region of interest.
     5. `transform`: Transform the image to a bird's eye view.
@@ -66,33 +74,50 @@ def pipeline(
     list[cv.Mat]
         A list of images, each representing a step in the pipeline.
     """
-    global line_lt, line_rt, processed_frames
+    global line_lt, line_rt, img_poly, processed_frames, img_thresh, img_region, img_warped, img_poly, Minv
 
-    undistort = undist_img(img_rgb, ca_param)
-    gaussian = apply_blur(undistort)
+    img_rgb = cv.pyrDown(img_rgb)
 
-    thresh = thresh_img(gaussian, kitti)
-
-    region, _ = region_of_interest(thresh, kitti)
-    transform, Minv = transform_perspective(region)
-
-    if processed_frames > 0 and keep_state and line_lt.detected and line_rt.detected:
-        line_lt, line_rt, poly = get_fits_by_previous_fits(transform, line_lt, line_rt)
+    if kitti:
+        img_gaussian = apply_blur(img_rgb)
     else:
-        line_lt, line_rt, poly = get_fits_by_sliding_windows(transform, line_lt, line_rt, n_windows=13)
+        img_undistort = undist_img(img_rgb, ca_param)
+        img_gaussian = apply_blur(img_undistort)
 
-    draw = draw_back_onto_the_road(undistort, Minv, line_lt, line_rt, keep_state)
+    if processed_frames % 2 == 0 or keep_state is False:
+        img_thresh = thresh_img(img_gaussian, kitti)
+
+        img_region, vertices = region_of_interest(img_thresh, kitti)
+
+        img_warped, Minv = transform_perspective(img_region, vertices)
+
+        if processed_frames > 0 and keep_state and line_lt.detected and line_rt.detected:
+            img_poly, line_lt, line_rt = get_fits_by_previous_fits(img_warped, line_lt, line_rt)
+        else:
+            img_poly, line_lt, line_rt = get_fits_by_sliding_windows(img_warped, line_lt, line_rt, n_windows=9)
+
+    if kitti:
+        img_draw = draw_back_onto_the_road(img_rgb, Minv, line_lt, line_rt, keep_state)
+    else:
+        img_draw = draw_back_onto_the_road(img_undistort, Minv, line_lt, line_rt, keep_state)
+
+    processed_frames += 1
 
     if pretty:
-        view = overlay_frames(draw, thresh, transform, poly)
-        return [undistort, gaussian, thresh, region, transform, poly, draw, view]
+        if kitti:
+            view = overlay_frames(img_draw, img_thresh, img_warped, img_poly)
+            return [img_gaussian, img_thresh, img_region, img_warped, img_poly, img_warped, view]
+        else:
+            view = overlay_frames(img_draw, img_thresh, img_warped, img_poly)
+            return [img_undistort, img_gaussian, img_thresh, img_region, img_warped, img_poly, img_warped, view]
 
-    return [undistort, gaussian, thresh, region, transform, poly, draw]
+    if kitti is False:
+        return [img_undistort, img_gaussian, img_thresh, img_region, img_warped, img_poly, img_draw]
+    else:
+        return [img_gaussian, img_thresh, img_region, img_warped, img_poly, img_draw]
 
 
-def main(pretty: bool = True) -> None:
-    clear_shell()
-
+def get_calibration():
     # Calibrate camera based on chessboard images
     mtx = cv.Mat(
         np.array(
@@ -105,11 +130,17 @@ def main(pretty: bool = True) -> None:
     )
     dist = cv.Mat(np.array([[-0.24688775, -0.02373133, -0.00109842, 0.00035108, -0.00258571]]))
     ca_param = (mtx, dist)
-
     # calib_images = glob("./data/exam/calib/*.jpg")
     # ca_param = get_calibration_params(calib_images, 9, 6)
-
     logger.success("Camera calibrated!")
+
+    return ca_param
+
+
+def main(pretty: bool = True, step_to_plot: int = -1, resize: bool = True) -> None:
+    clear_shell()
+
+    ca_param = get_calibration()
 
     options_1: list[str] = os.listdir("./data/exam")
     print_options(options_1)
@@ -136,18 +167,28 @@ def main(pretty: bool = True) -> None:
         # Load the image and run the pipeline
         img = cv.cvtColor(cv.imread(glob_files[user_input_2 - 1]), cv.COLOR_BGR2RGB)
         converted_image = pipeline(
-            img, ca_param, pretty=pretty, kitti=(True if user_input == "kitti" else False), keep_state=False
+            img,
+            ca_param,
+            pretty=pretty,
+            kitti=(True if user_input == "kitti" else False),
+            resize=resize,
+            keep_state=False,
         )
 
-        img_to_plot = converted_image[-1]
-        if img_to_plot is None:
+        try:
+            img = converted_image[step_to_plot]
+        except KeyError:
             logger.error("The image could not be converted. Exiting...")
             sys.exit(1)
 
-        # img_to_plot = cv.cvtColor(img_to_plot, cv.COLOR_GRAY2RGB)
+        if img is None:
+            logger.error("The image could not be converted. Exiting...")
+            sys.exit(1)
 
-        # plt.plot(hist(img_to_plot))
-        plt.imshow(img_to_plot)
+        # img = cv.cvtColor(img, cv.COLOR_GRAY2RGB)
+
+        # plt.plot(hist(img))
+        plt.imshow(img)
         plt.show()
 
     # The user wants to run the pipeline on videos
@@ -175,16 +216,21 @@ def main(pretty: bool = True) -> None:
                 break
 
             # Apply pipeline
-            converted_frame = pipeline(frame, ca_param, pretty=pretty)
+            converted_frame = pipeline(frame, ca_param, pretty, kitti=False, resize=resize, keep_state=True)
             # converted_frame = create_view(converted_frame)
 
-            frame_to_plot = converted_frame[-1]
-            if frame_to_plot is None:
+            try:
+                frame = converted_frame[step_to_plot]
+            except KeyError:
+                logger.error("The image could not be converted. Exiting...")
+                sys.exit(1)
+
+            if frame is None:
                 logger.error("The image could not be converted. Exiting...")
                 sys.exit(1)
 
             # render new frame
-            cv.imshow("frame", frame_to_plot)
+            cv.imshow("frame", frame)
             if cv.waitKey(1) == ord("q"):
                 break
 
