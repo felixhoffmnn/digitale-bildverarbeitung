@@ -21,6 +21,7 @@ from src.pipeline.perspective import transform_perspective, undist_img
 from src.pipeline.region import region_of_interest
 from src.pipeline.threshold import thresh_img
 from src.pipeline.view import overlay_frames
+from src.utils.calibration import get_calibration_params
 from src.utils.shell import clear_shell, get_int, print_options
 
 processed_frames = 0  # counter of frames processed (when processing video)
@@ -34,36 +35,65 @@ def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
     return median
 
 
-def pipeline(img: cv.Mat, mtx: cv.Mat, dist: cv.Mat, pretty: bool, keep_state: bool = True) -> list[cv.Mat]:
+def pipeline(
+    img_rgb: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat], pretty: bool, kitti: bool = False, keep_state: bool = True
+) -> list[cv.Mat]:
+    """Pipeline to process an image.
+
+    1. `undistort`: Applyes the camera calibration matrix and distortion coefficients to a raw image.
+    2. `gaussian`: Blure the image with a Gaussian filter.
+    3. `thresh`: Applies a threshold to the image (Sobel, HLS, HSV, Gray).
+    4. `region`: Polyfill only the region of interest.
+    5. `transform`: Transform the image to a bird's eye view.
+    6. `poly`: Find the lane-line pixels based on the previous frame.
+    7. `draw`: Draw the lane back onto the original image.
+
+    Parameters
+    ----------
+    img_rgb : cv.Mat
+        The image to process.
+    ca_param : tuple[cv.Mat, cv.Mat]
+        The camera calibration matrix and distortion coefficients.
+    pretty : bool
+        If the process pipeline should be converted into a view with multiple frame, like
+    kitti : bool, optional
+        If the KITTI dataset is selected. _By default `False`._
+    keep_state : bool, optional
+        If the lane detection should be based on the previous frame. _By default `True`._
+
+    Returns
+    -------
+    list[cv.Mat]
+        A list of images, each representing a step in the pipeline.
+    """
     global line_lt, line_rt, processed_frames
 
-    undistort = undist_img(img, mtx, dist)
+    undistort = undist_img(img_rgb, ca_param)
     gaussian = apply_blur(undistort)
-    thresh = thresh_img(gaussian)
-    # binar = binarize(gaussian)
-    region = region_of_interest(thresh)
+
+    thresh = thresh_img(gaussian, kitti)
+
+    region, _ = region_of_interest(thresh, kitti)
     transform, Minv = transform_perspective(region)
-    # fit 2-degree polynomial curve onto lane lines found
+
     if processed_frames > 0 and keep_state and line_lt.detected and line_rt.detected:
-        line_lt, line_rt, img_fit = get_fits_by_previous_fits(transform, line_lt, line_rt)
+        line_lt, line_rt, poly = get_fits_by_previous_fits(transform, line_lt, line_rt)
     else:
-        line_lt, line_rt, img_fit = get_fits_by_sliding_windows(transform, line_lt, line_rt, n_windows=13)
-    blend_on_road = draw_back_onto_the_road(undistort, Minv, line_lt, line_rt, keep_state)
+        line_lt, line_rt, poly = get_fits_by_sliding_windows(transform, line_lt, line_rt, n_windows=13)
+
+    draw = draw_back_onto_the_road(undistort, Minv, line_lt, line_rt, keep_state)
 
     if pretty:
-        view = overlay_frames(blend_on_road, thresh, transform, img_fit)
-        return [undistort, gaussian, thresh, region, transform, img_fit, blend_on_road, view]
+        view = overlay_frames(draw, thresh, transform, poly)
+        return [undistort, gaussian, thresh, region, transform, poly, draw, view]
 
-    return [undistort, gaussian, thresh, region, transform, img_fit, blend_on_road]
+    return [undistort, gaussian, thresh, region, transform, poly, draw]
 
 
 def main(pretty: bool = True) -> None:
     clear_shell()
 
     # Calibrate camera based on chessboard images
-    # calib_images = glob("./data/exam/calib/*.jpg")
-    # logger.debug(f"Found {len(calib_images)} calibration images.")
-    # mtx, dist = get_calibration_params(calib_images, 9, 6)
     mtx = cv.Mat(
         np.array(
             [
@@ -74,9 +104,14 @@ def main(pretty: bool = True) -> None:
         )
     )
     dist = cv.Mat(np.array([[-0.24688775, -0.02373133, -0.00109842, 0.00035108, -0.00258571]]))
+    ca_param = (mtx, dist)
+
+    # calib_images = glob("./data/exam/calib/*.jpg")
+    # ca_param = get_calibration_params(calib_images, 9, 6)
+
+    logger.success("Camera calibrated!")
 
     options_1: list[str] = os.listdir("./data/exam")
-    # options_1 = [x for x in options_1 if x != "calib"]
     print_options(options_1)
     user_input_1 = get_int(options_1)
 
@@ -86,13 +121,10 @@ def main(pretty: bool = True) -> None:
 
     glob_files = glob(f"./data/exam/{options_1[user_input_1 - 1]}/*")
 
+    user_input = options_1[user_input_1 - 1]
+
     # The user wants to run the pipeline on images
-    if (
-        options_1[user_input_1 - 1] == "images"
-        or options_1[user_input_1 - 1] == "calib"
-        or options_1[user_input_1 - 1] == "optimize"
-        or options_1[user_input_1 - 1] == "kitti"
-    ):
+    if user_input == "images" or user_input == "calib" or user_input == "optimize" or user_input == "kitti":
         logger.debug("Running pipeline on images...")
         print_options(glob_files)
         user_input_2 = get_int(glob_files)
@@ -103,7 +135,9 @@ def main(pretty: bool = True) -> None:
 
         # Load the image and run the pipeline
         img = cv.cvtColor(cv.imread(glob_files[user_input_2 - 1]), cv.COLOR_BGR2RGB)
-        converted_image = pipeline(img, mtx, dist, pretty=pretty, keep_state=False)
+        converted_image = pipeline(
+            img, ca_param, pretty=pretty, kitti=(True if user_input == "kitti" else False), keep_state=False
+        )
 
         img_to_plot = converted_image[-1]
         if img_to_plot is None:
@@ -117,7 +151,7 @@ def main(pretty: bool = True) -> None:
         plt.show()
 
     # The user wants to run the pipeline on videos
-    if options_1[user_input_1 - 1] == "videos":
+    if user_input == "videos":
         logger.debug("Running pipeline on videos...")
         filtered_paths = [path for path in glob_files if path != "./data/exam/videos/harder_challenge_video.mp4"]
         print_options(filtered_paths)
@@ -141,7 +175,7 @@ def main(pretty: bool = True) -> None:
                 break
 
             # Apply pipeline
-            converted_frame = pipeline(frame, mtx, dist, pretty=pretty)
+            converted_frame = pipeline(frame, ca_param, pretty=pretty)
             # converted_frame = create_view(converted_frame)
 
             frame_to_plot = converted_frame[-1]

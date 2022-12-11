@@ -74,7 +74,7 @@ def get_sobel(
 
 # TODO: Refactor this function
 # TODO: Add docstring
-def thresh_img(img_rgb: cv.Mat) -> cv.Mat:
+def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     """First convert the base image to HLS, HSV and grayscale color space.
     Then apply sobel filtering to the grayscale image and mask the base image for red, white and yellow lines.
     Finally combine the two masks and return the result.
@@ -83,6 +83,8 @@ def thresh_img(img_rgb: cv.Mat) -> cv.Mat:
     ----------
     img_rgb : cv.Mat
         The base image in RGB color space
+    kitti : bool
+        If the base image is from the KITTI dataset
 
     Returns
     -------

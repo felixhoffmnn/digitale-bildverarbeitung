@@ -1,5 +1,6 @@
 import cv2 as cv
 import numpy as np
+from loguru import logger
 
 
 def overlay_frames(undist: cv.Mat, thresh: cv.Mat, transform: cv.Mat, img_fit: cv.Mat):
@@ -30,23 +31,23 @@ def overlay_frames(undist: cv.Mat, thresh: cv.Mat, transform: cv.Mat, img_fit: c
     thumb_h, thumb_w = int(thumb_ratio * h), int(thumb_ratio * w)
     off_x, off_y = 20, 15
 
-    # add a gray rectangle to highlight the upper area
+    # Define a gray mask for separating the additional images from the original image
     mask = undist.copy()
     mask = cv.rectangle(mask, pt1=(0, 0), pt2=(w, thumb_h + 2 * off_y), color=(0, 0, 0), thickness=cv.FILLED)
     undist = cv.addWeighted(src1=mask, alpha=0.2, src2=undist, beta=0.8, gamma=0)
 
-    # add thumbnail of binary image
+    # Add the top left thumbnail (thresholded binary image)
     thumb_binary = cv.resize(thresh, dsize=(thumb_w, thumb_h))
     thumb_binary = np.stack([thumb_binary] * 3, axis=2)
     undist[off_y : thumb_h + off_y, off_x : off_x + thumb_w, :] = thumb_binary
 
-    # add thumbnail of bird's eye view
+    # Add the center thumbnail (bird's eye view)
     thumb_birdeye = cv.resize(transform, dsize=(thumb_w, thumb_h))
     thumb_birdeye = np.stack([thumb_birdeye] * 3, axis=2)
-    undist[off_y : thumb_h + off_y, 2 * off_x + thumb_w : 2 * (off_x + thumb_w), :] = thumb_birdeye
+    undist[off_y : thumb_h + off_y, int((w / 2) - (thumb_w / 2)) : int((w / 2) + (thumb_w / 2)), :] = thumb_birdeye
 
-    # add thumbnail of bird's eye view (lane-line highlighted)
+    # Add the top right thumbnail (bird's eye view with detected lane lines)
     thumb_img_fit = cv.resize(img_fit, dsize=(thumb_w, thumb_h))
-    undist[off_y : thumb_h + off_y, 3 * off_x + 2 * thumb_w : 3 * (off_x + thumb_w), :] = thumb_img_fit
+    undist[off_y : thumb_h + off_y, w - off_x - thumb_w : w - off_x, :] = thumb_img_fit
 
     return undist
