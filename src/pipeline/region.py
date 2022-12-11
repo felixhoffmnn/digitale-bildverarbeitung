@@ -22,8 +22,8 @@ def region_of_interest(img_gray: cv.Mat, kitti: bool = False) -> cv.Mat:
     else:
         vertices = np.array(
             [
-                [140, height],
-                [610, height * 0.60],
+                [130, height],
+                [615, height * 0.60],
                 [670, height * 0.60],
                 [1200, height],
             ],

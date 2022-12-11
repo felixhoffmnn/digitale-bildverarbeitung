@@ -49,7 +49,7 @@ class Line:
         self.recent_fits_pixel.append(self.last_fit_pixel)
         self.recent_fits_meter.append(self.last_fit_meter)
 
-    def draw(self, mask, color=(255, 0, 0), line_width=50, average=False):
+    def draw(self, mask, color=(255, 0, 0), line_width=25, average=False):
         """
         Draw the line on a color mask image.
         """

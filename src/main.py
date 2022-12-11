@@ -20,6 +20,7 @@ from src.pipeline.line import Line
 from src.pipeline.perspective import transform_perspective, undist_img
 from src.pipeline.region import region_of_interest
 from src.pipeline.threshold import thresh_img
+from src.pipeline.view import overlay_frames
 from src.utils.shell import clear_shell, get_int, print_options
 
 processed_frames = 0  # counter of frames processed (when processing video)
@@ -27,32 +28,36 @@ line_lt = Line(buffer_len=10)  # line on the left of the lane
 line_rt = Line(buffer_len=10)  # line on the right of the lane
 
 
-def apply_blur(img: cv.Mat, kernel_size: int = 5) -> cv.Mat:
+def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
     gausian = cv.GaussianBlur(img, (kernel_size, kernel_size), 0)
     median = cv.medianBlur(gausian, kernel_size)
     return median
 
 
-def pipeline(img: cv.Mat, mtx: cv.Mat, dist: cv.Mat, keep_state: bool = True) -> list[cv.Mat]:  # -> ConvertedImage:
+def pipeline(img: cv.Mat, mtx: cv.Mat, dist: cv.Mat, pretty: bool, keep_state: bool = True) -> list[cv.Mat]:
     global line_lt, line_rt, processed_frames
 
     undistort = undist_img(img, mtx, dist)
     gaussian = apply_blur(undistort)
-    line = thresh_img(gaussian)
+    thresh = thresh_img(gaussian)
     # binar = binarize(gaussian)
-    region = region_of_interest(line)
+    region = region_of_interest(thresh)
     transform, Minv = transform_perspective(region)
     # fit 2-degree polynomial curve onto lane lines found
     if processed_frames > 0 and keep_state and line_lt.detected and line_rt.detected:
         line_lt, line_rt, img_fit = get_fits_by_previous_fits(transform, line_lt, line_rt)
     else:
-        line_lt, line_rt, img_fit = get_fits_by_sliding_windows(transform, line_lt, line_rt, n_windows=9)
+        line_lt, line_rt, img_fit = get_fits_by_sliding_windows(transform, line_lt, line_rt, n_windows=13)
     blend_on_road = draw_back_onto_the_road(undistort, Minv, line_lt, line_rt, keep_state)
 
-    return [undistort, gaussian, line, region, transform, img_fit, blend_on_road]  # , region, transform, poly, draw
+    if pretty:
+        view = overlay_frames(blend_on_road, thresh, transform, img_fit)
+        return [undistort, gaussian, thresh, region, transform, img_fit, blend_on_road, view]
+
+    return [undistort, gaussian, thresh, region, transform, img_fit, blend_on_road]
 
 
-def main() -> None:
+def main(pretty: bool = True) -> None:
     clear_shell()
 
     # Calibrate camera based on chessboard images
@@ -98,7 +103,7 @@ def main() -> None:
 
         # Load the image and run the pipeline
         img = cv.cvtColor(cv.imread(glob_files[user_input_2 - 1]), cv.COLOR_BGR2RGB)
-        converted_image = pipeline(img, mtx, dist, keep_state=False)
+        converted_image = pipeline(img, mtx, dist, pretty=pretty, keep_state=False)
 
         img_to_plot = converted_image[-1]
         if img_to_plot is None:
@@ -136,7 +141,7 @@ def main() -> None:
                 break
 
             # Apply pipeline
-            converted_frame = pipeline(frame, mtx, dist)
+            converted_frame = pipeline(frame, mtx, dist, pretty=pretty)
             # converted_frame = create_view(converted_frame)
 
             frame_to_plot = converted_frame[-1]
