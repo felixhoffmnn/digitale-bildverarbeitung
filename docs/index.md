@@ -1,1 +1,1 @@
-# python_template
+--8<-- "README.md"

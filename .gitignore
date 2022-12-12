@@ -190,5 +190,6 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/python,visualstudiocode
 
-# MacOS
-.DS_Store
+
+## Custom rules
+data/output

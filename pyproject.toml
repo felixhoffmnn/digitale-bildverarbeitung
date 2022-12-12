@@ -1,17 +1,15 @@
 [tool.poetry]
 name = "digital_image_processing"
-version = "0.1.0"
-description = "Dolore fugiat ullamco voluptate incididunt voluptate voluptate magna esse eiusmod velit deserunt cillum ut do."
+version = "0.2.1"
+description = "Exercises during the 5th semester and a lane detection project based on a given dataset and the KITTI dataset"
 authors = [
   "Felix Hoffmann <felix.emmanuel.hoffmann@gmail.com>",
   "Leopold Fuchs <kontakt@leopold-fuchs.de>",
-  "Maxime Fritzsch <mfritzsch89@gmail.com>"
+  "Maxime Fritzsch <mfritzsch89@gmail.com>",
 ]
 license = "MIT"
 readme = "README.md"
-packages = [
-  { include = "src" }
-]
+packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.10"
@@ -21,28 +19,24 @@ numpy = "^1.23.3"
 opencv-python = "^4.6.0.66"
 matplotlib = "^3.6.1"
 scipy = "^1.9.2"
+fire = "^0.4.0"
+python-dotenv = "^0.21.0"
+poetry-dotenv-plugin = "^0.1.0"
 
 [tool.poetry.group.dev.dependencies]
-black = {extras = ["jupyter"], version = "^22.8.0"}
+black = { extras = ["jupyter"], version = "^22.8.0" }
 isort = "^5.10.1"
 mypy = "^0.981"
 pylint = "^2.15.3"
-flake8 = "^5.0.4"
-pytest = "^7.1.3"
-autopep8 = "^1.7.0"
 pre-commit = "^2.20.0"
-pytest-cov = "^4.0.0"
 jupyter = "^1.0.0"
 
 [tool.poetry.group.docs.dependencies]
-mkdocs = { extras = ["python"], version = "^1.4.0" }
+mkdocs = "^1.4.0"
 mkdocs-material = "^8.5.6"
 mkdocstrings = { extras = ["python"], version = "^0.19.0" }
 mkdocs-autorefs = "^0.4.1"
-mkdocs-git-revision-date-localized-plugin = "^1.1.0"
-mkdocs-jupyter = "^0.22.0"
 pymdown-extensions = "^9.8"
-mkdocs-mermaid2-plugin = "^0.6.0"
 
 [tool.mypy]
 mypy_path = 'src'
@@ -60,27 +54,15 @@ no_implicit_reexport = true
 
 [tool.black]
 line-length = 120
-exclude = '''
-/(
-    \.git
-  | \.mypy_cache
-  | \.tox
-  | venv
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-  | deploy
-  | presentations
-)/
-'''
+target-version = ["py310"]
 
 [tool.isort]
 profile = "black"
 
-[tool.pytest]
-testpaths = "tests"
+[tool.pylint]
+disable = "missing-module-docstring, broad-except"
+max-line-length = 120
+generated-members = "np.*, cv2.*"
 
 [build-system]
 requires = ["poetry-core"]
