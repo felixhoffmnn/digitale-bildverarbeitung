@@ -65,6 +65,8 @@ poetry run Python src/main.py False
 poetry run Python src/main.py False 5
 ```
 
+> **Note**: To suppress the debug messages, you can set the `LOGURU_LEVEL` environment variable to `INFO` within the `.env` file in the `root` directory.
+
 ## :mag: Scope of the Project
 
 **Minimum Requirements**:

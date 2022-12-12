@@ -198,7 +198,7 @@ def main(pretty: bool = True, step_to_plot: int = -1) -> None:
             sys.exit(1)
 
         # Save image to output path
-        cv.imwrite(output_file, cv.cvtColor(converted_image[6], cv.COLOR_RGB2BGR))
+        cv.imwrite(output_file, cv.cvtColor(img, cv.COLOR_RGB2BGR))
 
         # Plot the image
         plt.imshow(img)
