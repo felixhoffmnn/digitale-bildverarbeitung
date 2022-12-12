@@ -134,7 +134,7 @@ def get_fit_by_previous_line(name, line, nonzero, margin, h):
 
     mean_squared_error = calculate_mean_squared_error(fit_pixel, line.last_fit_pixel, h)
 
-    if mean_squared_error > 220:
+    if mean_squared_error > 205:
         logger.debug(f"{name}_mean_squared_error: {mean_squared_error}")
         fit_pixel = line.last_fit_pixel
         line.detected = False

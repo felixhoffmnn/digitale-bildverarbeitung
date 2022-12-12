@@ -39,7 +39,7 @@ def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
 
 
 def pipeline(
-    img_rgb: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat], pretty: bool, kitti: bool, resize: bool, keep_state: bool = True
+    img_rgb: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat], pretty: bool, kitti: bool, keep_state: bool = True
 ) -> list[cv.Mat]:
     """Pipeline to process an image.
 
@@ -103,10 +103,10 @@ def pipeline(
             view = overlay_frames(img_draw, img_thresh, img_birdeye, img_poly)
             return [img_undistort, img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_birdeye, view]
 
-    if kitti is False:
-        return [img_undistort, img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_draw]
-    else:
+    if kitti:
         return [img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_draw]
+    else:
+        return [img_undistort, img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_draw]
 
 
 def get_calibration():
@@ -129,7 +129,7 @@ def get_calibration():
     return ca_param
 
 
-def main(pretty: bool = True, step_to_plot: int = -1, resize: bool = True) -> None:
+def main(pretty: bool = True, step_to_plot: int = -1) -> None:
     clear_shell()
 
     ca_param = get_calibration()
@@ -161,9 +161,8 @@ def main(pretty: bool = True, step_to_plot: int = -1, resize: bool = True) -> No
         converted_image = pipeline(
             img,
             ca_param,
-            pretty=pretty,
+            pretty,
             kitti=(True if user_input == "kitti" else False),
-            resize=resize,
             keep_state=False,
         )
 
@@ -208,7 +207,7 @@ def main(pretty: bool = True, step_to_plot: int = -1, resize: bool = True) -> No
                 break
 
             # Apply pipeline
-            converted_frame = pipeline(frame, ca_param, pretty, kitti=False, resize=resize, keep_state=True)
+            converted_frame = pipeline(frame, ca_param, pretty, kitti=False, keep_state=True)
             # converted_frame = create_view(converted_frame)
 
             try:

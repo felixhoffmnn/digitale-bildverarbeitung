@@ -35,7 +35,7 @@ def get_inner_line(img_rgb: cv.Mat, img_hls: cv.Mat, img_hsv: cv.Mat) -> cv.Mat:
 
 
 def get_sobel(
-    img: cv.Mat, orient: str = "x", sobel_kernel: int = 3, sobel_threshold: tuple[int, int] = (40, 100)
+    img_rgb: cv.Mat, orient: str = "x", sobel_kernel: int = 3, sobel_threshold: tuple[int, int] = (40, 100)
 ) -> cv.Mat:
     """Apply sobel filtering to the image, scale the result and threshold it
 
@@ -56,9 +56,9 @@ def get_sobel(
         _description_
     """
     if orient == "x":
-        sobel = cv.Sobel(img, cv.CV_64F, 1, 0, ksize=sobel_kernel)
+        sobel = cv.Sobel(img_rgb, cv.CV_64F, 1, 0, ksize=sobel_kernel)
     elif orient == "y":
-        sobel = cv.Sobel(img, cv.CV_64F, 0, 1, ksize=sobel_kernel)
+        sobel = cv.Sobel(img_rgb, cv.CV_64F, 0, 1, ksize=sobel_kernel)
     else:
         logger.error("Invalid orientation for sobel filtering")
         sys.exit(1)
@@ -96,8 +96,8 @@ def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     img_gray = cv.cvtColor(img_rgb, cv.COLOR_RGB2GRAY)
     img_gray = cv.equalizeHist(img_gray)
 
-    sobel = get_sobel(img_gray, "x", 3, (40, 80))
-    r_rgb_mask = cv.inRange(sobel, np.array([185]), np.array([255]))
+    sobel = get_sobel(img_gray, "x", 3)
+    r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([150]), np.array([255]))
 
     inner_line = get_inner_line(img_rgb, img_hls, img_hsv)
     outer_line = cv.bitwise_and(sobel, r_rgb_mask)
@@ -105,7 +105,7 @@ def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     lane = cv.bitwise_or(inner_line, outer_line)
 
     if kitti:
-        r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([180]), np.array([255]))
+        r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([190]), np.array([255]))
         lane = cv.bitwise_and(lane, r_rgb_mask)
 
         r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([50]), np.array([125]))
