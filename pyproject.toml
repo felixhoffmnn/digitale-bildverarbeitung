@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "digital_image_processing"
-version = "0.2.1"
+version = "0.2.2"
 description = "Exercises during the 5th semester and a lane detection project based on a given dataset and the KITTI dataset"
 authors = [
   "Felix Hoffmann <felix.emmanuel.hoffmann@gmail.com>",
