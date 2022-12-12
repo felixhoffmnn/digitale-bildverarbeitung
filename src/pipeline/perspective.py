@@ -24,6 +24,8 @@ def undist_img(img: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat]) -> cv.Mat:
 def region_of_interest(img_gray: cv.Mat, kitti: bool) -> tuple[cv.Mat, cv.Mat]:
     """Limits the region of interest to the road / current lane.
 
+    ![Region of Interest](../images/region.jpg)
+
     Parameters
     ----------
     img_gray : cv.Mat
@@ -74,6 +76,8 @@ def region_of_interest(img_gray: cv.Mat, kitti: bool) -> tuple[cv.Mat, cv.Mat]:
 
 def transform_perspective(img_gray: cv.Mat, vertices: cv.Mat) -> tuple[cv.Mat, cv.Mat]:
     """Transforms the region of interest into a bird's eye view.
+
+    ![Bird's Eye View](../images/birdeye.jpg)
 
     Parameters
     ----------

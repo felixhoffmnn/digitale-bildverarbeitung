@@ -8,6 +8,8 @@ from loguru import logger
 def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
     """Applies gaussian and median blur to the image
 
+    ![Blur](../images/blur.jpg)
+
     Parameters
     ----------
     img : cv.Mat
@@ -96,6 +98,8 @@ def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     """First convert the base image to HLS, HSV and grayscale color space.
     Then apply sobel filtering to the grayscale image and mask the base image for red, white and yellow lines.
     Finally combine the two masks and return the result.
+
+    ![Threshold](../images/threshold.jpg)
 
     Parameters
     ----------

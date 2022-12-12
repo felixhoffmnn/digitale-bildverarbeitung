@@ -101,6 +101,8 @@ def get_fits_by_sliding_windows(
 ) -> tuple[cv.Mat, Line, Line]:
     """Gets the new lines on the given birdeye image by new sliding windows
 
+    ![Poly](../images/poly.jpg)
+
     Parameters
     ----------
     img_birdeye : cv.Mat
@@ -322,6 +324,8 @@ def draw_back_onto_the_road(
 
     1. Dewarp the road and fill the lane area with green color
     2. Draw the detected lane boundaries on the dewarped image (in red and blue color)
+
+    ![Draw](../images/draw.jpg)
 
     Parameters
     ----------
