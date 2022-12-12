@@ -69,9 +69,6 @@ def get_sobel(
     s_binary = np.zeros_like(scaled_sobel)
     s_binary[(scaled_sobel >= sobel_threshold[0]) & (scaled_sobel <= sobel_threshold[1])] = 255
 
-    r_rgb_mask = cv.inRange(img, np.array([140]), np.array([255]))
-    s_binary = cv.bitwise_and(s_binary, r_rgb_mask)
-
     return s_binary
 
 
@@ -99,18 +96,22 @@ def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     img_gray = cv.cvtColor(img_rgb, cv.COLOR_RGB2GRAY)
     img_gray = cv.equalizeHist(img_gray)
 
+    sobel = get_sobel(img_gray, "x", 3, (40, 80))
+    r_rgb_mask = cv.inRange(sobel, np.array([185]), np.array([255]))
+
     inner_line = get_inner_line(img_rgb, img_hls, img_hsv)
-    outer_line = get_sobel(img_gray, "x", 3)
+    outer_line = cv.bitwise_and(sobel, r_rgb_mask)
 
     lane = cv.bitwise_or(inner_line, outer_line)
 
     if kitti:
-        g_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([195]), np.array([255]))
-        lane = cv.bitwise_and(lane, g_rgb_mask)
+        r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([180]), np.array([255]))
+        lane = cv.bitwise_and(lane, r_rgb_mask)
+
+        r_rgb_mask = cv.inRange(img_rgb[:, :, 0], np.array([50]), np.array([125]))
+        sobel = get_sobel(img_gray, "x", 3, (40, 80))
+        sobel = cv.bitwise_and(sobel, r_rgb_mask)
+
+        lane = cv.bitwise_or(lane, sobel)
 
     return lane
-
-
-# calculate light channel mean 65 < 140
-# for
-# Seperate image into 4 parts (np.concatenate)

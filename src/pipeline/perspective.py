@@ -18,10 +18,10 @@ def region_of_interest(img_gray: cv.Mat, kitti: bool) -> tuple[cv.Mat, cv.Mat]:
     if kitti:
         vertices = np.array(
             [
-                (w * 0.75, h * 0.52),  # Top-right corner
+                (w * 0.72, h * 0.52),  # Top-right corner
                 (w, h),  # Bottom-right corner
                 (0, h),  # Bottom-left corner
-                (w * 0.39, h * 0.52),  # Top-left corner
+                (w * 0.38, h * 0.52),  # Top-left corner
             ],
             dtype=np.float32,
         )

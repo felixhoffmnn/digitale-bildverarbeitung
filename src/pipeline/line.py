@@ -1,8 +1,7 @@
-import collections
+from collections import deque
 
 import cv2 as cv
 import numpy as np
-from loguru import logger
 
 
 class Line:
@@ -11,17 +10,15 @@ class Line:
     """
 
     def __init__(self, buffer_len=10):
-
         # flag to mark if the line was detected the last iteration
         self.detected = False
+        self.error_count = 0
 
         # polynomial coefficients fitted on the last iteration
         self.last_fit_pixel = None
-        self.last_fit_meter = None
 
         # list of polynomial coefficients of the last N iterations
-        self.recent_fits_pixel = collections.deque(maxlen=buffer_len)
-        self.recent_fits_meter = collections.deque(maxlen=2 * buffer_len)
+        self.recent_fits_pixel = deque(maxlen=buffer_len)
 
         self.radius_of_curvature = None
 
@@ -29,11 +26,10 @@ class Line:
         self.all_x = None
         self.all_y = None
 
-    def update_line(self, new_fit_pixel, new_fit_meter, detected, clear_buffer=False):
+    def update_line(self, new_fit_pixel, detected, clear_buffer=False):
         """
         Update Line with new fitted coefficients.
         :param new_fit_pixel: new polynomial coefficients (pixel)
-        :param new_fit_meter: new polynomial coefficients (meter)
         :param detected: if the Line was detected or inferred
         :param clear_buffer: if True, reset state
         :return: None
@@ -42,13 +38,9 @@ class Line:
 
         if clear_buffer:
             self.recent_fits_pixel = []
-            self.recent_fits_meter = []
 
         self.last_fit_pixel = new_fit_pixel
-        self.last_fit_meter = new_fit_meter
-
         self.recent_fits_pixel.append(self.last_fit_pixel)
-        self.recent_fits_meter.append(self.last_fit_meter)
 
     def draw(self, mask, color=(255, 0, 0), line_width=10, average=False):
         """
@@ -81,11 +73,4 @@ class Line:
     def curvature(self):
         y_eval = 0
         coeffs = self.average_fit
-        return ((1 + (2 * coeffs[0] * y_eval + coeffs[1]) ** 2) ** 1.5) / np.absolute(2 * coeffs[0])
-
-    @property
-    # radius of curvature of the line (averaged)
-    def curvature_meter(self):
-        y_eval = 0
-        coeffs = np.mean(self.recent_fits_meter, axis=0)
         return ((1 + (2 * coeffs[0] * y_eval + coeffs[1]) ** 2) ** 1.5) / np.absolute(2 * coeffs[0])

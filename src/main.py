@@ -30,11 +30,6 @@ from src.utils.shell import clear_shell, get_int, print_options
 processed_frames = 0  # counter of frames processed (when processing video)
 line_lt = Line(buffer_len=10)  # line on the left of the lane
 line_rt = Line(buffer_len=10)  # line on the right of the lane
-Minv = None
-img_thresh = None
-img_region = None
-img_warped = None
-img_poly = None
 
 
 def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
@@ -74,7 +69,7 @@ def pipeline(
     list[cv.Mat]
         A list of images, each representing a step in the pipeline.
     """
-    global line_lt, line_rt, img_poly, processed_frames, img_thresh, img_region, img_warped, img_poly, Minv
+    global line_lt, line_rt, processed_frames
 
     img_rgb = cv.pyrDown(img_rgb)
 
@@ -84,17 +79,14 @@ def pipeline(
         img_undistort = undist_img(img_rgb, ca_param)
         img_gaussian = apply_blur(img_undistort)
 
-    if processed_frames % 2 == 0 or keep_state is False:
-        img_thresh = thresh_img(img_gaussian, kitti)
+    img_thresh = thresh_img(img_gaussian, kitti)
+    img_region, vertices = region_of_interest(img_thresh, kitti)
+    img_birdeye, Minv = transform_perspective(img_region, vertices)
 
-        img_region, vertices = region_of_interest(img_thresh, kitti)
-
-        img_warped, Minv = transform_perspective(img_region, vertices)
-
-        if processed_frames > 0 and keep_state and line_lt.detected and line_rt.detected:
-            img_poly, line_lt, line_rt = get_fits_by_previous_fits(img_warped, line_lt, line_rt)
-        else:
-            img_poly, line_lt, line_rt = get_fits_by_sliding_windows(img_warped, line_lt, line_rt, n_windows=9)
+    if processed_frames > 0 and keep_state:
+        img_poly, line_lt, line_rt = get_fits_by_previous_fits(img_birdeye, line_lt, line_rt)
+    else:
+        img_poly, line_lt, line_rt = get_fits_by_sliding_windows(img_birdeye, line_lt, line_rt, n_windows=9)
 
     if kitti:
         img_draw = draw_back_onto_the_road(img_rgb, Minv, line_lt, line_rt, keep_state)
@@ -105,16 +97,16 @@ def pipeline(
 
     if pretty:
         if kitti:
-            view = overlay_frames(img_draw, img_thresh, img_warped, img_poly)
-            return [img_gaussian, img_thresh, img_region, img_warped, img_poly, img_warped, view]
+            view = overlay_frames(img_draw, img_thresh, img_birdeye, img_poly)
+            return [img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_birdeye, view]
         else:
-            view = overlay_frames(img_draw, img_thresh, img_warped, img_poly)
-            return [img_undistort, img_gaussian, img_thresh, img_region, img_warped, img_poly, img_warped, view]
+            view = overlay_frames(img_draw, img_thresh, img_birdeye, img_poly)
+            return [img_undistort, img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_birdeye, view]
 
     if kitti is False:
-        return [img_undistort, img_gaussian, img_thresh, img_region, img_warped, img_poly, img_draw]
+        return [img_undistort, img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_draw]
     else:
-        return [img_gaussian, img_thresh, img_region, img_warped, img_poly, img_draw]
+        return [img_gaussian, img_thresh, img_region, img_birdeye, img_poly, img_draw]
 
 
 def get_calibration():
