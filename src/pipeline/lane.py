@@ -1,18 +1,61 @@
+import sys
+from typing import Any
+
 import cv2 as cv
 import numpy as np
 from loguru import logger
 from numpy.linalg import LinAlgError
 
+from src.pipeline.line import Line
 
-def lane_sliding_windows(img, line, nonzero, n_windows, window_height, margin, h, x_current, minpix=25):
-    # Create empty lists to receive left and right lane pixel indices
+
+def lane_sliding_windows(
+    img: cv.Mat,
+    line: Line,
+    nonzero: tuple[np.ndarray[Any, Any], ...],
+    n_windows: int,
+    window_height: int,
+    margin: int,
+    h: int,
+    x_current: np.int_,
+    minpix: int = 25,
+) -> tuple[Any, Any, bool]:
+    """Gets the new line on the given birdeye image by new sliding windows
+
+    Parameters
+    ----------
+    img : cv.Mat
+        Input image in birdeye perspective
+    line : Line
+        Line on which the sliding window is to be applied to
+    nonzero : tuple[np.ndarray[Any, Any], ...]
+        All the nonzero pixels of the input image
+    n_windows : int
+        Number of sliding windows used to search for the lines
+    window_height : int
+        Height of the windows
+    margin : int
+        Helps Calculate window boundaries
+    h : int
+        Height of the input image
+    x_current : np.int_
+        Used to calculate window boundaries
+    minpix : int, optional
+        Boundary which decides if window is recentered, by default 25
+
+    Returns
+    -------
+    tuple[Any, Any, bool]
+        Indices of the lane, Coefficients of the curve, Boolean if lane was detected
+    """
+
     lane_inds = []
 
     nonzero_y, nonzero_x = nonzero
 
-    # Step through the windows one by one
+    # For each sliding window
     for window in range(n_windows):
-        # Identify window boundaries in x and y (and right and left)
+        # Get boundaries of the window
         win_y_low = h - (window + 1) * window_height
         win_y_high = h - window * window_height
         win_x_low = x_current - margin
@@ -40,56 +83,65 @@ def lane_sliding_windows(img, line, nonzero, n_windows, window_height, margin, h
     line.error_count = 0
 
     # Extract left and right line pixel positions
-    line.all_x, line.all_y = nonzero_x[lane_inds], nonzero_y[lane_inds]
+    line.all_x, line.all_y = nonzero_x[lane_inds], nonzero_y[lane_inds]  # type: ignore
 
     detected = True
-    if not list(line.all_x) or not list(line.all_y):
+    # If no pixels were found, use the last fit
+    if not list(line.all_x) or not list(line.all_y):  # type: ignore
         fit_pixel = line.last_fit_pixel
         detected = False
     else:
-        fit_pixel = np.polyfit(line.all_y, line.all_x, 2)
+        fit_pixel = np.polyfit(line.all_y, line.all_x, 2)  # type: ignore
 
     return lane_inds, fit_pixel, detected
 
 
-def get_fits_by_sliding_windows(img_birdeye, line_lt, line_rt, n_windows=9):
-    """
-    Get polynomial coefficients for lane-lines detected in an binary image.
-    :param img_birdeye: input bird's eye view binary image
-    :param line_lt: left lane-line previously detected
-    :param line_rt: left lane-line previously detected
-    :param n_windows: number of sliding windows used to search for the lines
-    :param verbose: if True, display intermediate output
-    :return: updated lane lines and output image
+def get_fits_by_sliding_windows(
+    img_birdeye: cv.Mat, line_lt: Line, line_rt: Line, n_windows=9
+) -> tuple[cv.Mat, Line, Line]:
+    """Gets the new lines on the given birdeye image by new sliding windows
+
+    Parameters
+    ----------
+    img_birdeye : cv.Mat
+        The birdeye image for which the lines are to be detected
+    line_lt : Line
+        The current left line
+    line_rt : Line
+        The current right line
+    n_windows : int, optional
+        The number of windows, by default 9
+
+    Returns
+    -------
+    tuple[cv.Mat, Line, Line]
+        The output image with the new lines drawn on it, the new left line and the new right line
     """
     h, w = img_birdeye.shape
 
     off_x = w * 0.04
 
-    # Assuming you have created a warped binary image called "binary_warped"
-    # Take a histogram of the bottom half of the image
+    # Histogram of the bottom half of the image
     histogram = np.sum(img_birdeye[h // 2 : -15, :], axis=0)
 
-    # Create an output image to draw on and  visualize the result
-    out_img = np.dstack((img_birdeye, img_birdeye, img_birdeye)) * 255
-
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
+    # Prepare the output image
+    out_img = np.dstack((img_birdeye, img_birdeye, img_birdeye))
 
     midpoint = len(histogram) // 2
 
+    # Peak of the left and right halves of the histogram (but off_x pixels from the midpoint)
     leftx_base = np.argmax(histogram[: int(midpoint - off_x)])
     rightx_base = np.argmax(histogram[int(midpoint + off_x) :]) + midpoint
 
-    # Set height of windows
     window_height = int(h / n_windows)
 
-    # Identify the x and y positions of all nonzero pixels in the image
-    nonzero = img_birdeye.nonzero()
+    # x and y positions of all nonzero pixels in the image
+    nonzero: tuple[np.ndarray[Any, Any], ...] = img_birdeye.nonzero()
     nonzero_y, nonzero_x = nonzero
 
     margin = 50  # width of the windows +/- margin
 
+    # Get new indices and coefficients for the left and right lines by sliding windows
     left_lane_inds, left_fit_pixel, left_detected = lane_sliding_windows(
         img_birdeye, line_lt, nonzero, n_windows, window_height, margin, h, leftx_base
     )
@@ -97,6 +149,7 @@ def get_fits_by_sliding_windows(img_birdeye, line_lt, line_rt, n_windows=9):
         img_birdeye, line_rt, nonzero, n_windows, window_height, margin, h, rightx_base
     )
 
+    # Update line objects
     line_lt.update_line(left_fit_pixel, detected=left_detected)
     line_rt.update_line(right_fit_pixel, detected=right_detected)
 
@@ -106,34 +159,59 @@ def get_fits_by_sliding_windows(img_birdeye, line_lt, line_rt, n_windows=9):
     return out_img, line_lt, line_rt
 
 
-def get_fit_by_previous_line(name, line, nonzero, margin, h):
+def get_fit_by_previous_line(
+    name: str, line: Line, nonzero: tuple[np.ndarray[Any, Any], ...], margin: int, h: int
+) -> tuple[Any, Any, bool]:
+    """Calculates the fit of the line by the previous line.
+
+    This function represents a abstraction, to reduce code duplication.
+
+    Parameters
+    ----------
+    name : str
+        The name of the line
+    line : Line
+        The line object for which the fit is to be calculated
+    nonzero : tuple[np.ndarray[Any, Any], ...]
+        Nonzero pixels in the image
+    margin : int
+        Margin for the fit
+    h : int
+        Height of the image
+
+    Returns
+    -------
+    tuple[Any, Any, bool]
+        Indices of the pixels, fit of the line, if the line was detected
+    """
     nonzero_y, nonzero_x = nonzero
 
     fit_pixel = line.last_fit_pixel
 
-    # Identify the x and y positions of all nonzero pixels in the image
-    lane_inds = (nonzero_x > (fit_pixel[0] * (nonzero_y**2) + fit_pixel[1] * nonzero_y + fit_pixel[2] - margin)) & (
-        nonzero_x < (line.last_fit_pixel[0] * (nonzero_y**2) + fit_pixel[1] * nonzero_y + fit_pixel[2] + margin)
+    # x and y positions of all nonzero pixels in the image
+    lane_inds = (nonzero_x > (fit_pixel[0] * (nonzero_y**2) + fit_pixel[1] * nonzero_y + fit_pixel[2] - margin)) & (  # type: ignore
+        nonzero_x < (fit_pixel[0] * (nonzero_y**2) + fit_pixel[1] * nonzero_y + fit_pixel[2] + margin)  # type: ignore
     )
 
     # Extract left and right line pixel positions
     line.all_x, line.all_y = nonzero_x[lane_inds], nonzero_y[lane_inds]
 
-    # If there are no pixels found, do not update the line
-    # Otherwise, calculate the new fit
+    # If no pixels were found, use the last fit
     detected = True
-    if not list(line.all_x) or not list(line.all_y):
+    if not list(line.all_x) or not list(line.all_y):  # type: ignore
         fit_pixel = line.last_fit_pixel
         detected = False
     else:
         try:
-            fit_pixel = np.polyfit(line.all_y, line.all_x, 2)
+            fit_pixel = np.polyfit(line.all_y, line.all_x, 2)  # type: ignore
         except LinAlgError:
             fit_pixel = line.last_fit_pixel
             detected = False
 
-    mean_squared_error = calculate_mean_squared_error(fit_pixel, line.last_fit_pixel, h)
+    # Calculate MSE to check if the fit is valid or differs too much from the last fit
+    mean_squared_error = calculate_mean_squared_error(fit_pixel, line.last_fit_pixel, h)  # type: ignore
 
+    # If the MSE is too high, use the last fit
     if mean_squared_error > 205:
         logger.debug(f"{name}_mean_squared_error: {mean_squared_error}")
         fit_pixel = line.last_fit_pixel
@@ -143,24 +221,28 @@ def get_fit_by_previous_line(name, line, nonzero, margin, h):
     return lane_inds, fit_pixel, detected
 
 
-def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
-    """
-    Get polynomial coefficients for lane-lines detected in an binary image.
-    This function starts from previously detected lane-lines to speed-up the search of lane-lines in the current frame.
-    :param img_birdeye: input bird's eye view binary image
-    :param line_lt: left lane-line previously detected
-    :param line_rt: left lane-line previously detected
-    :param verbose: if True, display intermediate output
-    :return: updated lane lines and output image
+def get_fits_by_previous_fits(img_birdeye: cv.Mat, line_lt: Line, line_rt: Line) -> tuple[cv.Mat, Line, Line]:
+    """Searches for the lines in the birdeye image by using the previous fits.
+
+    Parameters
+    ----------
+    img_birdeye : cv.Mat
+        The birdeye image in which the lines are to be searched
+    line_lt : Line
+        The current left line
+    line_rt : Line
+        The current right line
+
+    Returns
+    -------
+    tuple[cv.Mat, Line, Line]
+        The output image, the updated left line and the updated right line
     """
     h, w = img_birdeye.shape
 
     # Gets the last polynomial coefficients
     left_fit_pixel = line_lt.last_fit_pixel
     right_fit_pixel = line_rt.last_fit_pixel
-
-    # logger.debug(f"left_fit_pixel_old: {left_fit_pixel_old}")
-    # logger.debug(f"right_fit_pixel: {right_fit_pixel}")
 
     # Set the width of the windows +/- margin
     nonzero = img_birdeye.nonzero()
@@ -170,28 +252,28 @@ def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
 
     histogram = np.sum(img_birdeye[h // 2 : -15, :], axis=0)
 
-    # Find the peak of the left and right halves of the histogram
-    # These will be the starting point for the left and right lines
-
     midpoint = len(histogram) // 2
 
     off_x = w * 0.04
 
+    # Peak of the left and right halves of the histogram (but off_x pixels from the midpoint)
     leftx_base = np.argmax(histogram[: int(midpoint - off_x)])
     rightx_base = np.argmax(histogram[int(midpoint + off_x) :]) + midpoint
 
+    # Calculate the sum of the pixels (i.e. how light it is) in the image
     sum_light = np.sum(img_birdeye)
 
-    if line_lt.error_count > 30 and sum_light > 200000:
-        logger.info(f"Refitting left lane: error count: {line_lt.error_count}")
+    # If there were too many errors in the last fits and the image is not too dark, refit the lines by sliding windows
+    if line_lt.error_count > 30 and sum_light > 200000:  # type : ignore
+        logger.info(f"Refitting left lane")
         left_lane_inds, left_fit_pixel, left_detected = lane_sliding_windows(
             img_birdeye, line_lt, nonzero, 9, 80, margin, h, leftx_base
         )
     else:
         left_lane_inds, left_fit_pixel, left_detected = get_fit_by_previous_line("left", line_lt, nonzero, margin, h)
 
-    if line_rt.error_count > 30 and sum_light > 200000:
-        logger.info(f"Refitting right lane: error count: {line_rt.error_count}")
+    if line_rt.error_count > 30 and sum_light > 200000:  # type : ignore
+        logger.info(f"Refitting right lane")
         right_lane_inds, right_fit_pixel, right_detected = lane_sliding_windows(
             img_birdeye, line_rt, nonzero, n_windows, window_height, margin, h, rightx_base
         )
@@ -200,6 +282,7 @@ def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
             "right", line_rt, nonzero, margin, h
         )
 
+    # Update the line objects
     line_lt.update_line(left_fit_pixel, detected=left_detected)
     line_rt.update_line(right_fit_pixel, detected=right_detected)
 
@@ -208,8 +291,8 @@ def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
     left_fitx = left_fit_pixel[0] * ploty**2 + left_fit_pixel[1] * ploty + left_fit_pixel[2]
     right_fitx = right_fit_pixel[0] * ploty**2 + right_fit_pixel[1] * ploty + right_fit_pixel[2]
 
-    # Create an image to draw on and an image to show the selection window
-    img_fit = np.dstack((img_birdeye, img_birdeye, img_birdeye)) * 255
+    # Prepare output image
+    img_fit = np.dstack((img_birdeye, img_birdeye, img_birdeye))
     window_img = np.zeros_like(img_fit)
 
     # Color in left and right line pixels
@@ -217,7 +300,6 @@ def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
     img_fit[nonzero[0][right_lane_inds], nonzero[1][right_lane_inds]] = [0, 0, 255]
 
     # Generate a polygon to illustrate the search window area
-    # And recast the x and y points into usable format for cv2.fillPoly()
     left_line_window1 = np.array([np.transpose(np.vstack([left_fitx - margin, ploty]))])
     left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fitx + margin, ploty])))])
     left_line_pts = np.hstack((left_line_window1, left_line_window2))
@@ -233,15 +315,31 @@ def get_fits_by_previous_fits(img_birdeye, line_lt, line_rt):
     return result, line_lt, line_rt
 
 
-def draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state):
-    """
-    Draw both the drivable lane area and the detected lane-lines onto the original (undistorted) frame.
-    :param img_undistorted: original undistorted color frame
-    :param Minv: (inverse) perspective transform matrix used to re-project on original frame
-    :param line_lt: left lane-line previously detected
-    :param line_rt: right lane-line previously detected
-    :param keep_state: if True, line state is maintained
-    :return: color blend
+def draw_back_onto_the_road(
+    img_undistorted: cv.Mat, Minv: cv.Mat, line_lt: Line, line_rt: Line, keep_state: bool
+) -> cv.Mat:
+    """Draws the detected lane boundaries and fills the lane area.
+
+    1. Dewarp the road and fill the lane area with green color
+    2. Draw the detected lane boundaries on the dewarped image (in red and blue color)
+
+    Parameters
+    ----------
+    img_undistorted : cv.Mat
+        The undistorted image the lane boundaries should be drawn on
+    Minv : _type_
+        The inverse perspective transform matrix
+    line_lt : _type_
+        The left line object
+    line_rt : _type_
+        The right line object
+    keep_state : _type_
+        If True, the average fit is used for drawing the lane boundaries
+
+    Returns
+    -------
+    cv.Mat
+        The image in undistorted perspective with the lane boundaries and the filled lane area
     """
     h, w, _ = img_undistorted.shape
 
@@ -250,10 +348,10 @@ def draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state)
 
     # Generate x and y values for plotting
     ploty = np.linspace(0, h - 1, h)
-    left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]
-    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]
+    left_fitx = left_fit[0] * ploty**2 + left_fit[1] * ploty + left_fit[2]  # type: ignore
+    right_fitx = right_fit[0] * ploty**2 + right_fit[1] * ploty + right_fit[2]  # type: ignore
 
-    # draw road as green polygon on original frame
+    # Draw road as green polygon on original frame
     road_warp = np.zeros_like(img_undistorted, dtype=np.uint8)
     pts_left = np.array([np.transpose(np.vstack([left_fitx, ploty]))])
     pts_right = np.array([np.flipud(np.transpose(np.vstack([right_fitx, ploty])))])
@@ -263,7 +361,7 @@ def draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state)
 
     blend_onto_road = cv.addWeighted(img_undistorted, 1.0, road_dewarped, 0.3, 0)
 
-    # now separately draw solid lines to highlight them
+    # Separately draw solid lines to highlight them
     line_warp = np.zeros_like(img_undistorted)
     line_warp = line_lt.draw(line_warp, color=(255, 0, 0), average=keep_state)
     line_warp = line_rt.draw(line_warp, color=(0, 0, 255), average=keep_state)
@@ -278,14 +376,14 @@ def draw_back_onto_the_road(img_undistorted, Minv, line_lt, line_rt, keep_state)
     return blend_onto_road
 
 
-def calculate_mean_squared_error(last_fit: list[np.float64], new_fit: list[np.float64], height: int) -> float:
+def calculate_mean_squared_error(last_fit: cv.Mat, new_fit: cv.Mat, height: int) -> float:
     """Calculates the mean squared error of the `new_fit` polynomial compared to given `last_fit` polynomial.
 
     Parameters
     ----------
-    last_fit : list[np.float64]
+    last_fit : cv.Mat
         Polynomial of 2 degrees
-    new_fit : list[np.float64]
+    new_fit : cv.Mat
         Polynomial of 2 degrees
     height : int
         Max y value the error should be calculated of

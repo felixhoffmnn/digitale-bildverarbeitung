@@ -1,21 +1,28 @@
 # Metadata
-site_name: digitale-bildverarbeitung
-site_description: Dolore fugiat ullamco voluptate incididunt voluptate voluptate magna esse eiusmod velit deserunt cillum ut do.
+site_name: Computer Vision
+site_description: Exercises during the 5th semester and a lane detection project based on a given dataset and the KITTI dataset
 site_author: Felix Hoffmann, Leopold Fuchs, and Maxime Fritzsch
 repo_name: felixhoffmnn/digitale-bildverarbeitung
 repo_url: https://github.com/felixhoffmnn/digitale-bildverarbeitung
+watch: ["src", "docs", "mkdocs.yaml", "pyproject.toml", "README.md"]
 
 # Navigation
 nav:
-  - Getting started: index.md
-  - Documentation:
-      - documentation/hello_world.md
+  - Overview: index.md
+  - Code Reference:
+      - Wrapper and Pipeline: main.md
+      - Pipeline Functions:
+          - Calibration: pipeline/calibration.md
+          - Threshold: pipeline/threshold.md
+          - Perspective: pipeline/perspective.md
+          - Lane: pipeline/lane.md
+          - Overlay: pipeline/overlay.md
+      - Line: pipeline/line.md
+      - Utilities: utils.md
 
 # Plugins
 plugins:
   - search
-  - git-revision-date-localized:
-      fallback_to_build_date: true
   - autorefs
   - mkdocstrings:
       handlers:
@@ -91,8 +98,5 @@ markdown_extensions:
       emoji_generator: !!python/name:materialx.emoji.to_svg
   - admonition
   - pymdownx.details
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tasklist:
+      custom_checkbox: true

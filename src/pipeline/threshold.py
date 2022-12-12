@@ -5,6 +5,26 @@ import numpy as np
 from loguru import logger
 
 
+def apply_blur(img: cv.Mat, kernel_size: int = 3) -> cv.Mat:
+    """Applies gaussian and median blur to the image
+
+    Parameters
+    ----------
+    img : cv.Mat
+        The image to apply the blur to
+    kernel_size : int, optional
+        The size of the kernel for the blur filters, by default 3
+
+    Returns
+    -------
+    cv.Mat
+        The blurred image
+    """
+    gausian = cv.GaussianBlur(img, (kernel_size, kernel_size), 0)
+    median = cv.medianBlur(gausian, kernel_size)
+    return median
+
+
 def get_inner_line(img_rgb: cv.Mat, img_hls: cv.Mat, img_hsv: cv.Mat) -> cv.Mat:
     """Mask the base image for red, white and yellow lines
 
@@ -41,19 +61,19 @@ def get_sobel(
 
     Parameters
     ----------
-    img : cv.Mat
+    img_rgb : cv.Mat
         The base image ()
     orient : str, optional
-        _description_, by default "x"
+        Orientation of filter (x or y), by default "x"
     sobel_kernel : int, optional
-        _description_, by default 3
+        Kernel size of sobel filter, by default 3
     sobel_threshold : tuple[int, int], optional
-        _description_, by default (40, 100)
+        Threshold for binary image, by default (40, 100)
 
     Returns
     -------
     cv.Mat
-        _description_
+        Thresholded sobel filtered image
     """
     if orient == "x":
         sobel = cv.Sobel(img_rgb, cv.CV_64F, 1, 0, ksize=sobel_kernel)
@@ -72,8 +92,6 @@ def get_sobel(
     return s_binary
 
 
-# TODO: Refactor this function
-# TODO: Add docstring
 def thresh_img(img_rgb: cv.Mat, kitti: bool) -> cv.Mat:
     """First convert the base image to HLS, HSV and grayscale color space.
     Then apply sobel filtering to the grayscale image and mask the base image for red, white and yellow lines.

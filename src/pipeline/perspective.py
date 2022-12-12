@@ -1,27 +1,51 @@
 import cv2 as cv
 import numpy as np
-from loguru import logger
 
 
-# TODO: Add docstring
 def undist_img(img: cv.Mat, ca_param: tuple[cv.Mat, cv.Mat]) -> cv.Mat:
+    """Undistorts the image with the given calibration parameters.
+
+    Parameters
+    ----------
+    img : cv.Mat
+        The image to be undistorted.
+    ca_param : tuple[cv.Mat, cv.Mat]
+        The calibration parameters.
+
+    Returns
+    -------
+    cv.Mat
+        The undistorted image.
+    """
     img_dst = cv.undistort(img, ca_param[0], ca_param[1])
     return img_dst
 
 
-# TODO: Refactor this function
-# TODO: Add docstring
 def region_of_interest(img_gray: cv.Mat, kitti: bool) -> tuple[cv.Mat, cv.Mat]:
+    """Limits the region of interest to the road / current lane.
+
+    Parameters
+    ----------
+    img_gray : cv.Mat
+        Gray input image
+    kitti : bool
+        Input which indicates if image is kitty or not
+
+    Returns
+    -------
+    tuple[cv.Mat, cv.Mat]
+        Image where mask pixels are nonzero, The vertices of the region of interest.
+    """
     h, w = img_gray.shape[:2]
 
     # Find region of interest
     if kitti:
         vertices = np.array(
             [
-                (w * 0.72, h * 0.52),  # Top-right corner
+                (w * 0.72, h * 0.54),  # Top-right corner
                 (w, h),  # Bottom-right corner
                 (0, h),  # Bottom-left corner
-                (w * 0.38, h * 0.52),  # Top-left corner
+                (w * 0.38, h * 0.54),  # Top-left corner
             ],
             dtype=np.float32,
         )
@@ -48,9 +72,7 @@ def region_of_interest(img_gray: cv.Mat, kitti: bool) -> tuple[cv.Mat, cv.Mat]:
     return masked_image, vertices
 
 
-# TODO: Refactor this function
-# TODO: Add docstring
-def transform_perspective(img_gray: cv.Mat, vertices: cv.Mat) -> tuple[cv.Mat, cv.Mat]:  # , destination: cv.Mat
+def transform_perspective(img_gray: cv.Mat, vertices: cv.Mat) -> tuple[cv.Mat, cv.Mat]:
     """Transforms the region of interest into a bird's eye view.
 
     Parameters
